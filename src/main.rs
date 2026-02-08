@@ -122,3 +122,50 @@ fn main() {
 
     println!("result: {}", dpll(&mut clauses));
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unit_clause_some() {
+        let clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3]];
+        let unit_clause = get_unit_clause(&clauses);
+        assert!(unit_clause.is_some());
+    }
+
+    #[test]
+    fn unit_clause_none() {
+        let clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1, 3], vec![2, 3]];
+        let unit_clause = get_unit_clause(&clauses);
+        assert!(unit_clause.is_none());
+    }
+
+    #[test]
+    fn does_unit_propogation() {
+        let mut clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3]];
+        unit_propogate(&mut clauses, 1);
+        assert_eq!(clauses, vec![vec![2, 3]]);
+    }
+
+    #[test]
+    fn does_unit_propogation_negation() {
+        let mut clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
+        unit_propogate(&mut clauses, 1);
+        assert_eq!(clauses, vec![vec![2, 3], vec![2]]);
+    }
+
+    #[test]
+    fn gets_pure_literals() {
+        let clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
+        let pure_literals: HashSet<i64> = HashSet::from_iter(get_pure_literals(&clauses));
+        assert_eq!(pure_literals, HashSet::from_iter(vec![2, 3]));
+    }
+
+    #[test]
+    fn assigns_pure_literals() {
+        let mut clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
+        assign_pure_literals(&mut clauses, vec![2, 3]);
+        assert_eq!(clauses, vec![vec![1]]);
+    }
+}
