@@ -1,14 +1,9 @@
-use std::fs;
+use std::{collections::HashSet, fs};
 
-#[derive(Debug)]
-struct Clause {
-    pub literals: Vec<i64>,
-}
-
-fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Vec<Clause>) {
+fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Vec<Vec<i64>>) {
     let mut num_variables = 0;
     let mut num_clauses = 0;
-    let mut clauses: Vec<Clause> = Vec::new();
+    let mut clauses: Vec<Vec<i64>> = Vec::new();
 
     for line in lines {
         if line.starts_with("p") {
@@ -20,23 +15,110 @@ fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Vec<Clause>) {
                 .split_whitespace()
                 .filter_map(|s| s.parse::<i64>().ok())
                 .collect();
-            clauses.push(Clause { literals });
+            clauses.push(literals);
         }
     }
 
     assert_eq!(
         num_clauses,
         clauses.len() as i64,
-        "The number of clauses in the file should be equal to the given config."
+        "The number of clauses in the file should be equal to the given parameters."
     );
 
     (num_variables, num_clauses, clauses)
 }
 
+fn get_unit_clause(clauses: &Vec<Vec<i64>>) -> Option<i64> {
+    clauses.iter().find(|c| c.len() == 1).map(|c| c[0])
+}
+
+fn unit_propogate(clauses: &mut Vec<Vec<i64>>, lit: i64) {
+    clauses.retain(|c| !c.contains(&lit));
+
+    for clause in clauses.iter_mut() {
+        clause.retain(|&l| l != -lit);
+    }
+}
+
+fn get_pure_literals(clauses: &Vec<Vec<i64>>) -> Vec<i64> {
+    let mut positive_literals = HashSet::new();
+    let mut negative_literals = HashSet::new();
+
+    for clause in clauses {
+        for literal in clause {
+            if *literal < 0 {
+                negative_literals.insert(-literal);
+            } else {
+                positive_literals.insert(*literal);
+            }
+        }
+    }
+
+    let pure_positive = positive_literals
+        .difference(&negative_literals)
+        .copied()
+        .collect::<Vec<i64>>();
+    let pure_negative = negative_literals
+        .difference(&positive_literals)
+        .map(|l| -(*l))
+        .collect::<Vec<i64>>();
+
+    pure_positive
+        .into_iter()
+        .chain(pure_negative.into_iter())
+        .collect()
+}
+
+fn assign_pure_literals(clauses: &mut Vec<Vec<i64>>, pure_literals: Vec<i64>) {
+    clauses.retain(|c| {
+        let mut is_contained = false;
+        for lit in c {
+            if pure_literals.contains(lit) {
+                is_contained = true;
+                break;
+            }
+        }
+        !is_contained
+    });
+}
+
+fn choose_literal(clauses: &Vec<Vec<i64>>) -> i64 {
+    clauses[0][0]
+}
+
+fn dpll(clauses: &mut Vec<Vec<i64>>) -> bool {
+    while let Some(lit) = get_unit_clause(clauses) {
+        unit_propogate(clauses, lit);
+    }
+
+    let pure_literals = get_pure_literals(clauses);
+    assign_pure_literals(clauses, pure_literals);
+
+    if clauses.is_empty() {
+        return true;
+    }
+
+    if clauses.iter().any(|c| c.is_empty()) {
+        return false;
+    }
+
+    let lit = choose_literal(clauses);
+
+    let mut add_positive = clauses.clone();
+    add_positive.push(vec![lit]);
+
+    let mut add_negative = clauses.clone();
+    add_negative.push(vec![-lit]);
+
+    dpll(&mut add_positive) || dpll(&mut add_negative)
+}
+
 fn main() {
     let file_path = String::from("./benchmarks/sample.cnf");
     let contents = fs::read_to_string(file_path).expect("File path should exist.");
-    let (num_variables, num_clauses, clauses) = parse_benchmark(contents.lines());
+    let (num_variables, num_clauses, mut clauses) = parse_benchmark(contents.lines());
 
-    println!("{} {} {:?}", num_clauses, num_variables, clauses);
+    println!("{} {} {:?}", num_variables, num_clauses, clauses);
+
+    println!("result: {}", dpll(&mut clauses));
 }
