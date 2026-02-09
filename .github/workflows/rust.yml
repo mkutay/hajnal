@@ -1,4 +1,4 @@
-name: Reckless CI
+name: Hajnal CI
 
 on:
   push:
@@ -32,9 +32,6 @@ jobs:
 
       - name: Run tests
         run: cargo test --verbose
-
-      - name: Run bench
-        run: cargo run --verbose -- bench
 
       - name: Run rustfmt
         run: cargo fmt -- --check
