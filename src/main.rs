@@ -1,7 +1,7 @@
+use std::env;
 use std::fs;
 
 mod dpll;
-use crate::dpll::dpll;
 
 fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Vec<Vec<i64>>) {
     let mut num_variables = 0;
@@ -32,11 +32,28 @@ fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Vec<Vec<i64>>) {
 }
 
 fn main() {
-    let file_path = String::from("./benchmarks/sample.cnf");
-    let contents = fs::read_to_string(file_path).expect("File path should exist.");
+    let args: Vec<String> = env::args().collect();
+    let config = Config::build(&args).expect("Failed to parse arguments.");
+
+    let contents = fs::read_to_string(config.file_path).expect("File path should exist.");
     let (num_variables, num_clauses, mut clauses) = parse_benchmark(contents.lines());
 
     println!("{} {} {:?}", num_variables, num_clauses, clauses);
 
-    println!("result: {}", dpll(&mut clauses));
+    println!("result: {}", dpll::dpll(&mut clauses));
+}
+
+struct Config {
+    file_path: String,
+}
+
+impl Config {
+    fn build(args: &[String]) -> Result<Config, &'static str> {
+        if args.len() < 2 {
+            return Err("Not enough arguments. Usage: <program> <file_path>");
+        }
+
+        let file_path = args[1].clone();
+        Ok(Config { file_path })
+    }
 }

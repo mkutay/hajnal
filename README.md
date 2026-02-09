@@ -5,7 +5,7 @@ This is a SAT solver written in Rust. Currently it only implements the very basi
 ## Usage
 
 ```bash
-cargo run
+cargo run benchmarks/sample.cnf
 ```
 
 ```bash
