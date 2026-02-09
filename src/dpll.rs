@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-fn get_unit_clause(clauses: &Vec<Vec<i64>>) -> Option<i64> {
+fn get_unit_clause(clauses: &[Vec<i64>]) -> Option<i64> {
     clauses.iter().find(|c| c.len() == 1).map(|c| c[0])
 }
 
@@ -12,7 +12,7 @@ fn unit_propogate(clauses: &mut Vec<Vec<i64>>, lit: i64) {
     }
 }
 
-fn get_pure_literals(clauses: &Vec<Vec<i64>>) -> Vec<i64> {
+fn get_pure_literals(clauses: &[Vec<i64>]) -> Vec<i64> {
     let mut positive_literals = HashSet::new();
     let mut negative_literals = HashSet::new();
 
@@ -35,10 +35,7 @@ fn get_pure_literals(clauses: &Vec<Vec<i64>>) -> Vec<i64> {
         .map(|l| -(*l))
         .collect::<Vec<i64>>();
 
-    pure_positive
-        .into_iter()
-        .chain(pure_negative.into_iter())
-        .collect()
+    pure_positive.into_iter().chain(pure_negative).collect()
 }
 
 fn assign_pure_literals(clauses: &mut Vec<Vec<i64>>, pure_literals: Vec<i64>) {
@@ -54,7 +51,7 @@ fn assign_pure_literals(clauses: &mut Vec<Vec<i64>>, pure_literals: Vec<i64>) {
     });
 }
 
-fn choose_literal(clauses: &Vec<Vec<i64>>) -> i64 {
+fn choose_literal(clauses: &[Vec<i64>]) -> i64 {
     clauses[0][0]
 }
 
