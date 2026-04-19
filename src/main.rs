@@ -1,12 +1,16 @@
+mod clauses;
+mod dpll;
+
 use std::env;
 use std::fs;
 
-mod dpll;
+use crate::clauses::Clauses;
+use crate::dpll::dpll;
 
-fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Vec<Vec<i64>>) {
+fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Clauses) {
     let mut num_variables = 0;
     let mut num_clauses = 0;
-    let mut clauses: Vec<Vec<i64>> = Vec::new();
+    let mut clauses: Clauses = Vec::new();
 
     for line in lines {
         if line.starts_with("p") {
@@ -40,7 +44,7 @@ fn main() {
 
     println!("{} {} {:?}", num_variables, num_clauses, clauses);
 
-    println!("result: {}", dpll::dpll(&mut clauses));
+    println!("result: {}", dpll(&mut clauses));
 }
 
 struct Config {

@@ -1,10 +1,12 @@
 use std::collections::HashSet;
 
-fn get_unit_clause(clauses: &[Vec<i64>]) -> Option<i64> {
+use crate::clauses::{Clause, Clauses, Literal};
+
+fn get_unit_clause(clauses: &Clauses) -> Option<Literal> {
     clauses.iter().find(|c| c.len() == 1).map(|c| c[0])
 }
 
-fn unit_propogate(clauses: &mut Vec<Vec<i64>>, lit: i64) {
+fn unit_propogate(clauses: &mut Clauses, lit: Literal) {
     clauses.retain(|c| !c.contains(&lit));
 
     for clause in clauses.iter_mut() {
@@ -12,7 +14,7 @@ fn unit_propogate(clauses: &mut Vec<Vec<i64>>, lit: i64) {
     }
 }
 
-fn get_pure_literals(clauses: &[Vec<i64>]) -> Vec<i64> {
+fn get_pure_literals(clauses: &Clauses) -> Vec<Literal> {
     let mut positive_literals = HashSet::new();
     let mut negative_literals = HashSet::new();
 
@@ -29,16 +31,16 @@ fn get_pure_literals(clauses: &[Vec<i64>]) -> Vec<i64> {
     let pure_positive = positive_literals
         .difference(&negative_literals)
         .copied()
-        .collect::<Vec<i64>>();
+        .collect::<Vec<Literal>>();
     let pure_negative = negative_literals
         .difference(&positive_literals)
         .map(|l| -(*l))
-        .collect::<Vec<i64>>();
+        .collect::<Vec<Literal>>();
 
     pure_positive.into_iter().chain(pure_negative).collect()
 }
 
-fn assign_pure_literals(clauses: &mut Vec<Vec<i64>>, pure_literals: Vec<i64>) {
+fn assign_pure_literals(clauses: &mut Clauses, pure_literals: Vec<Literal>) {
     clauses.retain(|c| {
         let mut is_contained = false;
         for lit in c {
@@ -51,11 +53,11 @@ fn assign_pure_literals(clauses: &mut Vec<Vec<i64>>, pure_literals: Vec<i64>) {
     });
 }
 
-fn choose_literal(clauses: &[Vec<i64>]) -> i64 {
+fn choose_literal(clauses: &Clauses) -> Literal {
     clauses[0][0]
 }
 
-pub fn dpll(clauses: &mut Vec<Vec<i64>>) -> bool {
+pub fn dpll(clauses: &mut Clauses) -> bool {
     while let Some(lit) = get_unit_clause(clauses) {
         unit_propogate(clauses, lit);
     }
@@ -74,10 +76,10 @@ pub fn dpll(clauses: &mut Vec<Vec<i64>>) -> bool {
     let lit = choose_literal(clauses);
 
     let mut add_positive = clauses.clone();
-    add_positive.push(vec![lit]);
+    add_positive.push(Clause::from([lit]));
 
     let mut add_negative = clauses.clone();
-    add_negative.push(vec![-lit]);
+    add_negative.push(Clause::from([-lit]));
 
     dpll(&mut add_positive) || dpll(&mut add_negative)
 }
@@ -88,42 +90,42 @@ mod tests {
 
     #[test]
     fn unit_clause_some() {
-        let clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3]];
+        let clauses: Clauses = vec![vec![1, 2], vec![1], vec![2, 3]];
         let unit_clause = get_unit_clause(&clauses);
         assert!(unit_clause.is_some());
     }
 
     #[test]
     fn unit_clause_none() {
-        let clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1, 3], vec![2, 3]];
+        let clauses: Clauses = vec![vec![1, 2], vec![1, 3], vec![2, 3]];
         let unit_clause = get_unit_clause(&clauses);
         assert!(unit_clause.is_none());
     }
 
     #[test]
     fn does_unit_propogation() {
-        let mut clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3]];
+        let mut clauses: Clauses = vec![vec![1, 2], vec![1], vec![2, 3]];
         unit_propogate(&mut clauses, 1);
         assert_eq!(clauses, vec![vec![2, 3]]);
     }
 
     #[test]
     fn does_unit_propogation_negation() {
-        let mut clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
+        let mut clauses: Clauses = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
         unit_propogate(&mut clauses, 1);
         assert_eq!(clauses, vec![vec![2, 3], vec![2]]);
     }
 
     #[test]
     fn gets_pure_literals() {
-        let clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
+        let clauses: Clauses = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
         let pure_literals: HashSet<i64> = HashSet::from_iter(get_pure_literals(&clauses));
         assert_eq!(pure_literals, HashSet::from_iter(vec![2, 3]));
     }
 
     #[test]
     fn assigns_pure_literals() {
-        let mut clauses: Vec<Vec<i64>> = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
+        let mut clauses: Clauses = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
         assign_pure_literals(&mut clauses, vec![2, 3]);
         assert_eq!(clauses, vec![vec![1]]);
     }
