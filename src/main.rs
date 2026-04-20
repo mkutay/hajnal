@@ -4,13 +4,13 @@ mod dpll;
 use std::env;
 use std::fs;
 
-use crate::clauses::Clauses;
+use crate::clauses::Formula;
 use crate::dpll::dpll;
 
-fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Clauses) {
+fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Formula) {
     let mut num_variables = 0;
     let mut num_clauses = 0;
-    let mut clauses: Clauses = Vec::new();
+    let mut clauses: Formula = Vec::new();
 
     for line in lines {
         if line.starts_with("p") {
