@@ -7,16 +7,16 @@ use std::fs;
 use crate::clauses::Formula;
 use crate::dpll::dpll;
 
-fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Formula) {
-    let mut num_variables = 0;
-    let mut num_clauses = 0;
+fn parse_benchmark(lines: std::str::Lines) -> (usize, usize, Formula) {
+    let mut num_variables: usize = 0;
+    let mut num_clauses: usize = 0;
     let mut clauses: Formula = Vec::new();
 
     for line in lines {
         if line.starts_with("p") {
             let parts: Vec<&str> = line.split_whitespace().collect();
-            num_variables = parts[2].parse::<i64>().unwrap();
-            num_clauses = parts[3].parse::<i64>().unwrap();
+            num_variables = parts[2].parse::<usize>().unwrap();
+            num_clauses = parts[3].parse::<usize>().unwrap();
         } else if !line.starts_with("c") {
             let literals = line
                 .split_whitespace()
@@ -28,7 +28,7 @@ fn parse_benchmark(lines: std::str::Lines) -> (i64, i64, Formula) {
 
     assert_eq!(
         num_clauses,
-        clauses.len() as i64,
+        clauses.len(),
         "The number of clauses in the file should be equal to the given parameters."
     );
 
