@@ -41,20 +41,19 @@ fn get_pure_literals(clauses: &Formula) -> Vec<Literal> {
 }
 
 fn assign_pure_literals(clauses: &mut Formula, pure_literals: Vec<Literal>) {
-    clauses.retain(|c| {
-        let mut is_contained = false;
-        for lit in c {
-            if pure_literals.contains(lit) {
-                is_contained = true;
-                break;
-            }
-        }
-        !is_contained
-    });
+    clauses.retain(|c| !pure_literals.iter().any(|&lit| c.contains(&lit)));
 }
 
-fn choose_literal(clauses: &Formula) -> Literal {
-    clauses[0][0]
+fn choose_literal(clauses: &Formula) -> Result<Literal, bool> {
+    if clauses.is_empty() {
+        return Err(true);
+    }
+
+    if clauses.iter().any(|c| c.is_empty()) {
+        return Err(false);
+    }
+
+    Ok(clauses[0][0])
 }
 
 pub fn dpll(clauses: &mut Formula) -> bool {
@@ -65,15 +64,10 @@ pub fn dpll(clauses: &mut Formula) -> bool {
     let pure_literals = get_pure_literals(clauses);
     assign_pure_literals(clauses, pure_literals);
 
-    if clauses.is_empty() {
-        return true;
-    }
-
-    if clauses.iter().any(|c| c.is_empty()) {
-        return false;
-    }
-
-    let lit = choose_literal(clauses);
+    let lit = match choose_literal(clauses) {
+        Ok(l) => l,
+        Err(result) => return result,
+    };
 
     let mut add_positive = clauses.clone();
     add_positive.push(Clause::from([lit]));
