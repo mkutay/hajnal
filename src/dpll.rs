@@ -40,7 +40,7 @@ fn get_pure_literals(clauses: &Formula) -> Vec<Literal> {
     pure_positive.into_iter().chain(pure_negative).collect()
 }
 
-fn assign_pure_literals(clauses: &mut Formula, pure_literals: &Vec<Literal>) {
+fn assign_pure_literals(clauses: &mut Formula, pure_literals: &[Literal]) {
     clauses.retain(|c| !pure_literals.iter().any(|&lit| c.contains(&lit)));
 }
 
@@ -74,13 +74,13 @@ pub fn dpll(clauses: &mut Formula) -> Option<Vec<Literal>> {
 
     branch(clauses.clone(), lit)
         .or_else(|| branch(clauses.clone(), -lit))
-        .and_then(|res| {
+        .map(|res| {
             true_literals.extend(res);
-            Some(true_literals.clone())
+            true_literals.clone()
         })
 }
 
-pub fn check_assignment(clauses: &Formula, assignment: &Vec<Literal>) -> bool {
+pub fn check_assignment(clauses: &Formula, assignment: &[Literal]) -> bool {
     let assignment_set: HashSet<Literal> = HashSet::from_iter(assignment.iter().copied());
 
     clauses.iter().all(|clause| {
