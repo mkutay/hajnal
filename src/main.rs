@@ -4,7 +4,7 @@ mod dpll;
 use std::env;
 use std::fs;
 
-use crate::clauses::Formula;
+use crate::clauses::{Clause, Formula};
 use crate::dpll::{check_assignment, dpll};
 
 fn parse_benchmark(lines: std::str::Lines) -> (usize, usize, Formula) {
@@ -18,10 +18,18 @@ fn parse_benchmark(lines: std::str::Lines) -> (usize, usize, Formula) {
             num_variables = parts[2].parse::<usize>().unwrap();
             num_clauses = parts[3].parse::<usize>().unwrap();
         } else if !line.starts_with("c") {
-            let literals = line
+            let mut literals: Clause = line
                 .split_whitespace()
                 .filter_map(|s| s.parse::<i64>().ok())
                 .collect();
+
+            assert_eq!(
+                literals.last(),
+                Some(&0),
+                "Each clause should end with a 0 according to the DIMACS format."
+            );
+
+            literals.pop();
             clauses.push(literals);
         }
     }
@@ -40,9 +48,7 @@ fn main() {
     let config = Config::build(&args).expect("Failed to parse arguments.");
 
     let contents = fs::read_to_string(config.file_path).expect("File path should exist.");
-    let (num_variables, num_clauses, mut clauses) = parse_benchmark(contents.lines());
-
-    println!("{} {} {:?}", num_variables, num_clauses, clauses);
+    let (_num_variables, _num_clauses, mut clauses) = parse_benchmark(contents.lines());
 
     match dpll(&mut clauses) {
         Some(assignment) => {
