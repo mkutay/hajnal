@@ -40,42 +40,58 @@ fn get_pure_literals(clauses: &Formula) -> Vec<Literal> {
     pure_positive.into_iter().chain(pure_negative).collect()
 }
 
-fn assign_pure_literals(clauses: &mut Formula, pure_literals: Vec<Literal>) {
+fn assign_pure_literals(clauses: &mut Formula, pure_literals: &Vec<Literal>) {
     clauses.retain(|c| !pure_literals.iter().any(|&lit| c.contains(&lit)));
 }
 
-fn choose_literal(clauses: &Formula) -> Result<Literal, bool> {
-    if clauses.is_empty() {
-        return Err(true);
-    }
-
-    if clauses.iter().any(|c| c.is_empty()) {
-        return Err(false);
-    }
-
-    Ok(clauses[0][0])
+fn branch(clauses: Formula, lit: Literal) -> Option<Vec<Literal>> {
+    let mut new_clauses = clauses.clone();
+    new_clauses.push(Clause::from([lit]));
+    dpll(&mut new_clauses)
 }
 
-pub fn dpll(clauses: &mut Formula) -> bool {
+pub fn dpll(clauses: &mut Formula) -> Option<Vec<Literal>> {
+    let mut true_literals: Vec<Literal> = Vec::new();
+
     while let Some(lit) = get_unit_clause(clauses) {
         unit_propogate(clauses, lit);
+        true_literals.push(lit);
     }
 
     let pure_literals = get_pure_literals(clauses);
-    assign_pure_literals(clauses, pure_literals);
+    true_literals.extend(pure_literals.iter());
+    assign_pure_literals(clauses, &pure_literals);
 
-    let lit = match choose_literal(clauses) {
-        Ok(l) => l,
-        Err(result) => return result,
-    };
+    if clauses.is_empty() {
+        return Some(true_literals);
+    }
 
-    let mut add_positive = clauses.clone();
-    add_positive.push(Clause::from([lit]));
+    if clauses.iter().any(|c| c.is_empty()) {
+        return None;
+    }
 
-    let mut add_negative = clauses.clone();
-    add_negative.push(Clause::from([-lit]));
+    let lit = clauses[0][0];
 
-    dpll(&mut add_positive) || dpll(&mut add_negative)
+    branch(clauses.clone(), lit)
+        .or_else(|| branch(clauses.clone(), -lit))
+        .and_then(|res| {
+            true_literals.extend(res);
+            Some(true_literals.clone())
+        })
+}
+
+pub fn check_assignment(clauses: &Formula, assignment: &Vec<Literal>) -> bool {
+    let assignment_set: HashSet<Literal> = HashSet::from_iter(assignment.iter().copied());
+
+    clauses.iter().all(|clause| {
+        clause.iter().any(|&lit| {
+            if lit < 0 {
+                assignment_set.contains(&(-lit))
+            } else {
+                assignment_set.contains(&lit)
+            }
+        })
+    })
 }
 
 #[cfg(test)]
@@ -120,7 +136,7 @@ mod tests {
     #[test]
     fn assigns_pure_literals() {
         let mut clauses: Formula = vec![vec![1, 2], vec![1], vec![2, 3], vec![2, -1]];
-        assign_pure_literals(&mut clauses, vec![2, 3]);
+        assign_pure_literals(&mut clauses, &vec![2, 3]);
         assert_eq!(clauses, vec![vec![1]]);
     }
 }

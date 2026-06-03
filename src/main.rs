@@ -5,7 +5,7 @@ use std::env;
 use std::fs;
 
 use crate::clauses::Formula;
-use crate::dpll::dpll;
+use crate::dpll::{check_assignment, dpll};
 
 fn parse_benchmark(lines: std::str::Lines) -> (usize, usize, Formula) {
     let mut num_variables: usize = 0;
@@ -44,7 +44,18 @@ fn main() {
 
     println!("{} {} {:?}", num_variables, num_clauses, clauses);
 
-    println!("result: {}", dpll(&mut clauses));
+    match dpll(&mut clauses) {
+        Some(assignment) => {
+            if check_assignment(&clauses, &assignment) {
+                println!("Satisfiable with assignment: {:?}", assignment);
+            } else {
+                println!("Incorrect assignment found: {:?}", assignment);
+            }
+        }
+        None => {
+            println!("Unsatisfiable");
+        }
+    }
 }
 
 struct Config {
